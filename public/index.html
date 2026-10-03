@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>周瑜无人房 - 用户购买</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306B6D4'/%3E%3Ctext x='32' y='44' font-size='28' text-anchor='middle' fill='white'%3E%E5%91%A8%3C/text%3E%3C/svg%3E">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: rgb(5, 7, 15);
+    color: rgb(217, 246, 255);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+  .bg-grid {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(56, 224, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(56, 224, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none; z-index: 0;
+  }
+  .bg-orb { position: fixed; border-radius: 50%; filter: blur(100px); pointer-events: none; z-index: 0; }
+  .orb1 { width: 600px; height: 600px; background: rgba(6, 182, 212, 0.15); top: -200px; left: -200px; }
+  .orb2 { width: 500px; height: 500px; background: rgba(139, 92, 246, 0.12); bottom: -150px; right: -100px; }
+  .orb3 { width: 400px; height: 400px; background: rgba(37, 99, 235, 0.1); top: 40%; left: 50%; transform: translateX(-50%); }
+  .bg-vignette {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none; z-index: 1;
+  }
+  .wrap { position: relative; z-index: 10; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  .header { display: flex; justify-content: space-between; align-items: center; padding: 24px 0; }
+  .logo-title { font-size: 18px; font-weight: 700; letter-spacing: 2px; color: rgb(165, 243, 252); }
+
+  .header-actions { display: flex; gap: 12px; align-items: center; }
+  .balance-box {
+    font-size: 14px; color: rgb(251, 146, 60);
+    padding: 8px 16px; background: rgba(251, 146, 60, 0.1);
+    border-radius: 10px; border: 1px solid rgba(251, 146, 60, 0.3);
+    font-weight: 600;
+  }
+  .user-info {
+    font-size: 14px; color: rgba(217, 246, 255, 0.7);
+    padding: 8px 16px; background: rgba(56, 224, 255, 0.08);
+    border-radius: 10px; border: 1px solid rgba(56, 224, 255, 0.15);
+    display: none;
+  }
+
+  .btn {
+    padding: 10px 20px; border-radius: 10px; font-size: 14px;
+    cursor: pointer; border: none; transition: all 0.2s; font-weight: 500;
+  }
+  .btn-link {
+    background: rgba(6, 182, 212, 0.1); color: rgb(165, 243, 252);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+  }
+  .btn-link:hover { background: rgba(6, 182, 212, 0.2); }
+  .btn-logout {
+    background: rgba(239, 68, 68, 0.1); color: rgb(252, 165, 165);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+  .btn-logout:hover { background: rgba(239, 68, 68, 0.2); }
+
+  .hero { text-align: center; padding: 40px 0 30px; }
+  .hero-title {
+    font-size: 48px; font-weight: 800;
+    background: linear-gradient(135deg, rgb(56, 224, 255), rgb(139, 92, 246));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    text-shadow: 0 0 40px rgba(56, 224, 255, 0.3);
+    margin-bottom: 20px; letter-spacing: 2px;
+  }
+
+  .card {
+    background: rgba(6, 10, 22, 0.6);
+    border: 1px solid rgba(56, 224, 255, 0.15);
+    border-radius: 16px; padding: 32px;
+    backdrop-filter: blur(10px); margin-bottom: 32px;
+    max-width: 500px; margin-left: auto; margin-right: auto;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .card-title { font-size: 18px; font-weight: 600; color: rgb(165, 243, 252); }
+  .card-version { font-size: 12px; color: rgba(217, 246, 255, 0.4); letter-spacing: 1px; }
+
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .tab {
+    padding: 14px; text-align: center; border-radius: 10px;
+    font-size: 15px; font-weight: 500; cursor: pointer;
+    transition: all 0.2s; border: 1px solid transparent;
+  }
+  .tab-active {
+    background: linear-gradient(135deg, rgb(6, 182, 212), rgb(139, 92, 246));
+    color: white; box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
+  }
+  .tab-inactive {
+    background: rgba(56, 224, 255, 0.05); color: rgba(217, 246, 255, 0.6);
+    border-color: rgba(56, 224, 255, 0.1);
+  }
+  .tab-inactive:hover { background: rgba(56, 224, 255, 0.1); color: rgba(217, 246, 255, 0.8); }
+
+  .form-group { margin-bottom: 20px; }
+  .form-label { display: block; font-size: 14px; color: rgba(217, 246, 255, 0.8); margin-bottom: 8px; }
+  .form-input {
+    width: 100%; padding: 14px 16px;
+    background: rgba(6, 10, 22, 0.75);
+    border: 1px solid rgba(56, 224, 255, 0.25);
+    border-radius: 10px; color: rgb(217, 246, 255);
+    font-size: 14px; transition: all 0.2s; outline: none;
+  }
+  .form-input::placeholder { color: rgba(217, 246, 255, 0.3); }
+  .form-input:focus { border-color: rgba(56, 224, 255, 0.5); box-shadow: 0 0 0 3px rgba(56, 224, 255, 0.1); }
+
+  .btn-primary-full {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, rgb(6, 182, 212), rgb(139, 92, 246));
+    color: white; font-size: 16px; font-weight: 600;
+    border: none; border-radius: 10px; cursor: pointer;
+    transition: all 0.2s; letter-spacing: 4px;
+    box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
+  }
+  .btn-primary-full:hover { transform: translateY(-1px); box-shadow: 0 6px 30px rgba(6, 182, 212, 0.4); }
+
+  /* 充值区 */
+  .recharge-card {
+    background: rgba(6, 10, 22, 0.6);
+    border: 1px solid rgba(251, 146, 60, 0.2);
+    border-radius: 16px; padding: 24px;
+    margin-bottom: 24px;
+  }
+  .recharge-title {
+    font-size: 16px; font-weight: 600; color: rgb(251, 146, 60);
+    margin-bottom: 16px;
+  }
+  .recharge-row { display: flex; gap: 12px; }
+  .recharge-row .form-input { flex: 1; }
+  .recharge-btn {
+    padding: 14px 24px;
+    background: linear-gradient(135deg, rgb(251, 146, 60), rgb(239, 68, 68));
+    color: white; font-size: 14px; font-weight: 500;
+    border: none; border-radius: 10px; cursor: pointer; white-space: nowrap;
+  }
+  .recharge-btn:hover { transform: translateY(-1px); }
+
+  .shop-section { display: none; margin-top: 24px; }
+  .category-tabs {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;
+    padding-bottom: 16px; border-bottom: 1px solid rgba(56, 224, 255, 0.1);
+  }
+  .cat-tab {
+    padding: 8px 16px; border-radius: 10px; font-size: 14px;
+    cursor: pointer; transition: all 0.2s;
+    border: 1px solid transparent; color: rgba(217, 246, 255, 0.6);
+    background: rgba(56, 224, 255, 0.05);
+  }
+  .cat-tab:hover { background: rgba(56, 224, 255, 0.1); color: rgba(217, 246, 255, 0.9); }
+  .cat-tab.active {
+    background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.3);
+    color: rgb(165, 243, 252);
+  }
+
+  .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 1024px) { .product-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .product-grid { grid-template-columns: 1fr; } .hero-title { font-size: 32px; } .recharge-row { flex-direction: column; } }
+
+  .product-card {
+    background: rgba(6, 10, 22, 0.6);
+    border: 1px solid rgba(56, 224, 255, 0.1);
+    border-radius: 12px; overflow: hidden; transition: all 0.2s;
+  }
+  .product-card:hover { border-color: rgba(56, 224, 255, 0.3); transform: translateY(-2px); }
+  .product-img {
+    width: 100%; height: 100px;
+    background: linear-gradient(135deg, rgba(6,182,212,0.1), rgba(139,92,246,0.1));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; position: relative;
+  }
+  .product-badge {
+    position: absolute; top: 8px; right: 8px;
+    padding: 4px 10px; font-size: 11px; border-radius: 6px;
+  }
+  .badge-soldout { background: rgba(239, 68, 68, 0.9); color: white; }
+  .badge-stock { background: rgba(16, 185, 129, 0.9); color: white; }
+
+  .product-info { padding: 14px; }
+  .product-cat { font-size: 12px; color: rgba(217, 246, 255, 0.5); margin-bottom: 4px; }
+  .product-name { font-size: 14px; color: rgb(217, 246, 255); margin-bottom: 8px; line-height: 1.4; }
+  .product-price { font-size: 16px; font-weight: 600; color: rgb(251, 146, 60); margin-bottom: 12px; }
+  .product-price span { font-size: 12px; font-weight: 400; color: rgba(217, 246, 255, 0.5); }
+
+  .buy-btn {
+    width: 100%; padding: 10px;
+    background: linear-gradient(135deg, rgb(251, 146, 60), rgb(239, 68, 68));
+    color: white; font-size: 13px; font-weight: 500;
+    border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+  }
+  .buy-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(251, 146, 60, 0.3); }
+  .buy-btn:disabled { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.3); cursor: not-allowed; }
+
+  .empty-state { text-align: center; padding: 60px; color: rgba(217, 246, 255, 0.3); font-size: 14px; }
+
+  .modal-mask {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; backdrop-filter: blur(4px);
+  }
+  .modal-mask.show { display: flex; }
+  .modal {
+    background: rgb(10, 15, 30);
+    border: 1px solid rgba(56, 224, 255, 0.2);
+    border-radius: 16px; padding: 32px;
+    width: 90%; max-width: 420px;
+  }
+  .modal-title { font-size: 18px; font-weight: 600; color: rgb(165, 243, 252); margin-bottom: 20px; }
+  .modal-product {
+    font-size: 14px; color: rgba(217, 246, 255, 0.8);
+    margin-bottom: 16px; padding: 12px;
+    background: rgba(56, 224, 255, 0.05); border-radius: 8px;
+  }
+  .modal-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid rgba(56, 224, 255, 0.1);
+    font-size: 14px;
+  }
+  .modal-row:last-child { border-bottom: none; }
+  .modal-row .label { color: rgba(217, 246, 255, 0.6); }
+  .modal-row .value { color: rgb(217, 246, 255); font-weight: 500; }
+  .modal-row .value.price { color: rgb(251, 146, 60); font-size: 18px; font-weight: 700; }
+
+  .qty-control { display: flex; align-items: center; gap: 12px; justify-content: flex-end; }
+  .qty-btn {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(56, 224, 255, 0.1); color: rgb(165, 243, 252);
+    border: 1px solid rgba(56, 224, 255, 0.2);
+    cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+  }
+  .qty-num { font-size: 16px; font-weight: 600; min-width: 30px; text-align: center; }
+
+  .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
+  .modal-btn {
+    flex: 1; padding: 12px; border-radius: 10px; font-size: 14px;
+    cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .modal-btn-cancel {
+    background: rgba(56, 224, 255, 0.1); color: rgba(217, 246, 255, 0.7);
+    border: 1px solid rgba(56, 224, 255, 0.2);
+  }
+  .modal-btn-confirm {
+    background: linear-gradient(135deg, rgb(251, 146, 60), rgb(239, 68, 68));
+    color: white; font-weight: 500;
+  }
+
+  .success-icon {
+    width: 60px; height: 60px; margin: 0 auto 16px;
+    background: rgba(16, 185, 129, 0.15); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; color: rgb(52, 211, 153);
+  }
+  .success-title { text-align: center; font-size: 18px; font-weight: 600; color: rgb(52, 211, 153); margin-bottom: 16px; }
+  .key-display {
+    background: rgba(6, 10, 22, 0.75);
+    border: 1px dashed rgba(56, 224, 255, 0.3);
+    border-radius: 10px; padding: 16px;
+    text-align: center; font-family: monospace; font-size: 14px;
+    color: rgb(56, 224, 255); letter-spacing: 1px; margin-bottom: 16px;
+    white-space: pre-line;
+  }
+
+  .footer {
+    text-align: center; padding: 40px 0; font-size: 13px;
+    color: rgba(217, 246, 255, 0.4);
+    border-top: 1px solid rgba(56, 224, 255, 0.1); margin-top: 40px;
+  }
+  #toast {
+    position: fixed; top: 80px; left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(6, 182, 212, 0.9); color: white;
+    padding: 12px 24px; border-radius: 10px; font-size: 14px;
+    z-index: 200; opacity: 0; transition: all 0.3s; pointer-events: none;
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+<div class="bg-orb orb3"></div>
+<div class="bg-vignette"></div>
+
+<div class="wrap">
+  <header class="header">
+    <div class="logo-title">周瑜无人房</div>
+    <div class="header-actions">
+      <span class="balance-box" id="balance-box" style="display:none">余额：¥0.00</span>
+      <span class="user-info" id="user-info">👤 <b id="username-display"></b></span>
+      <button class="btn btn-logout hidden" id="btn-logout" onclick="logout()">退出登录</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1 class="hero-title">周瑜无人房</h1>
+  </section>
+
+  <!-- 登录/注册卡片 -->
+  <div class="card" id="auth-card">
+    <div class="card-head">
+      <div class="card-title">用户中心</div>
+      <div class="card-version">USER PANEL</div>
+    </div>
+    <div class="tabs">
+      <div class="tab tab-active" id="tab-login" onclick="switchTab('login')">登 录</div>
+      <div class="tab tab-inactive" id="tab-register" onclick="switchTab('register')">注册账号</div>
+    </div>
+    <div id="form-login">
+      <div class="form-group">
+        <label class="form-label">账号</label>
+        <input type="text" class="form-input" id="login-user" placeholder="请输入账号">
+      </div>
+      <div class="form-group">
+        <label class="form-label">密码</label>
+        <input type="password" class="form-input" id="login-pass" placeholder="请输入密码">
+      </div>
+      <button class="btn-primary-full" onclick="doLogin()">登 录</button>
+    </div>
+    <div id="form-register" class="hidden">
+      <div class="form-group">
+        <label class="form-label">账号</label>
+        <input type="text" class="form-input" id="reg-user" placeholder="请设置账号（至少3位）">
+      </div>
+      <div class="form-group">
+        <label class="form-label">密码</label>
+        <input type="password" class="form-input" id="reg-pass" placeholder="请设置密码（至少6位）">
+      </div>
+      <div class="form-group">
+        <label class="form-label">确认密码</label>
+        <input type="password" class="form-input" id="reg-pass2" placeholder="再次输入密码">
+      </div>
+      <button class="btn-primary-full" onclick="doRegister()">注 册</button>
+    </div>
+  </div>
+
+  <!-- 商城区（登录后显示） -->
+  <div class="shop-section" id="shop-section">
+    <!-- 充值区 -->
+    <div class="recharge-card">
+      <div class="recharge-title">充值中心</div>
+      <div class="recharge-row">
+        <input type="text" class="form-input" id="recharge-code" placeholder="请输入充值卡密">
+        <button class="recharge-btn" onclick="doRecharge()">立即充值</button>
+        <button class="recharge-btn" style="background:linear-gradient(135deg,#f59e0b,#ef4444);margin-left:8px;" onclick="openWithdrawModal()">提现</button>
+      </div>
+    </div>
+
+    <div class="category-tabs" id="category-tabs"></div>
+    <div id="product-container"></div>
+
+    <!-- 我的订单 -->
+    <div style="margin-top: 32px;">
+      <div style="font-size: 18px; font-weight: 600; color: rgb(165,243,252); margin-bottom: 16px;">我的订单</div>
+      <div id="my-orders"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    © 2026 周瑜无人房
+  </footer>
+</div>
+
+<!-- 购买弹窗 -->
+<div class="modal-mask" id="buy-modal">
+  <div class="modal">
+    <div class="modal-title">确认购买</div>
+    <div class="modal-product" id="modal-product-name">商品名称</div>
+    <div class="modal-row">
+      <span class="label">单价</span>
+      <span class="value" id="modal-price">¥2.00</span>
+    </div>
+    <div class="modal-row">
+      <span class="label">购买数量</span>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <span class="qty-num" id="modal-qty">1</span>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+      </div>
+    </div>
+    <div class="modal-row">
+      <span class="label">合计</span>
+      <span class="value price" id="modal-total">¥2.00</span>
+    </div>
+    <div class="modal-row">
+      <span class="label">当前余额</span>
+      <span class="value" id="modal-balance">¥0.00</span>
+    </div>
+    <div class="form-group" style="margin: 12px 0;">
+      <label style="display:block;font-size:13px;color:rgba(217,246,255,0.6);margin-bottom:6px;">数字ID（任选一项填写）</label>
+      <input type="text" id="buy-digitalid" placeholder="请输入数字ID" style="width:100%;padding:10px 12px;background:rgba(5,8,18,0.8);border:1px solid rgba(56,224,255,0.25);border-radius:8px;color:white;font-size:14px;margin-bottom:8px;">
+      <label style="display:block;font-size:13px;color:rgba(217,246,255,0.6);margin-bottom:6px;">文字ID（任选一项填写）</label>
+      <input type="text" id="buy-textid" placeholder="请输入文字ID" style="width:100%;padding:10px 12px;background:rgba(5,8,18,0.8);border:1px solid rgba(56,224,255,0.25);border-radius:8px;color:white;font-size:14px;margin-bottom:8px;">
+      <label style="display:block;font-size:13px;color:rgba(217,246,255,0.6);margin-bottom:6px;">组队码（任选一项填写）</label>
+      <input type="text" id="buy-teamcode" placeholder="请输入组队码" style="width:100%;padding:10px 12px;background:rgba(5,8,18,0.8);border:1px solid rgba(56,224,255,0.25);border-radius:8px;color:white;font-size:14px;">
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal('buy-modal')">取消</button>
+      <button class="modal-btn modal-btn-confirm" onclick="confirmBuy()">确认购买</button>
+    </div>
+  </div>
+</div>
+
+<!-- 下单成功弹窗 -->
+<div class="modal-mask" id="success-modal">
+  <div class="modal">
+    <div class="success-icon">✓</div>
+    <div class="success-title">下单成功</div>
+    <div style="text-align: center; font-size: 14px; color: rgba(217,246,255,0.7); margin: 16px 0;">
+      订单已提交，工作人员会尽快处理发货<br>
+      您可以在"我的订单"中查看进度并确认收货
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-confirm" onclick="closeModal('success-modal')">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 提现弹窗 -->
+<div class="modal-mask" id="withdraw-modal">
+  <div class="modal">
+    <div class="modal-title">申请提现</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:12px;">
+      当前余额：¥<span id="withdraw-balance">0.00</span>（手续费2%）
+    </div>
+    <div class="form-group">
+      <label style="display:block;font-size:13px;color:rgba(217,246,255,0.6);margin-bottom:6px;">提现方式</label>
+      <div style="display:flex;gap:10px;margin-bottom:10px;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;">
+          <input type="radio" name="withdraw-type" value="微信" checked onchange="toggleWithdrawType()"> 微信
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;">
+          <input type="radio" name="withdraw-type" value="支付宝" onchange="toggleWithdrawType()"> 支付宝
+        </label>
+      </div>
+    </div>
+    <div class="form-group" id="wx-info-group">
+      <label style="display:block;font-size:13px;color:rgba(217,246,255,0.6);margin-bottom:6px;">微信账号 / 手机号</label>
+      <input type="text" id="wx-info" placeholder="请输入微信号或绑定手机号" style="width:100%;padding:10px 12px;background:rgba(5,8,18,0.8);border:1px solid rgba(56,224,255,0.25);border-radius:8px;color:white;font-size:14px;margin-bottom:8px;">
+      <label style="display:block;font-size:13px;color:rgba(217,246,255,0.6);margin-bottom:6px;">上传收款码（可选）</label>
+      <input type="file" id="wx-qrcode" accept="image/*" onchange="uploadQrcode('wx')" style="width:100%;padding:8px;background:rgba(5,8,18,0.8);border:1px solid rgba(56,224,255,0.25);border-radius:8px;color:white;font-size:13px;">
+      <img id="wx-qrcode-preview" style="max-width:150px;margin-top:8px;border-radius:8px;display:none;">
+    </div>
+    <div class="form-group" id="alipay-info-group" style="display:none;">
+      <label style="display:block;font-size:13px;color:rgba(217,246,255,0.6);margin-bottom:6px;">支付宝账号 / 手机号</label>
+      <input type="text" id="alipay-info" placeholder="请输入支付宝账号或绑定手机号" style="width:100%;padding:10px 12px;background:rgba(5,8,18,0.8);border:1px solid rgba(56,224,255,0.25);border-radius:8px;color:white;font-size:14px;margin-bottom:8px;">
+      <label style="display:block;font-size:13px;color:rgba(217,246,255,0.6);margin-bottom:6px;">上传收款码（可选）</label>
+      <input type="file" id="alipay-qrcode" accept="image/*" onchange="uploadQrcode('alipay')" style="width:100%;padding:8px;background:rgba(5,8,18,0.8);border:1px solid rgba(56,224,255,0.25);border-radius:8px;color:white;font-size:13px;">
+      <img id="alipay-qrcode-preview" style="max-width:150px;margin-top:8px;border-radius:8px;display:none;">
+    </div>
+    <div class="form-group">
+      <label style="display:block;font-size:13px;color:rgba(217,246,255,0.6);margin-bottom:6px;">提现金额（元）</label>
+      <input type="number" id="withdraw-amount" placeholder="输入提现金额" step="0.01" min="0" style="width:100%;padding:10px 12px;background:rgba(5,8,18,0.8);border:1px solid rgba(56,224,255,0.25);border-radius:8px;color:white;font-size:14px;">
+      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;">实际到账：¥<span id="withdraw-real">0.00</span>（扣2%手续费）</div>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal('withdraw-modal')">取消</button>
+      <button class="modal-btn modal-btn-confirm" onclick="submitWithdraw()">下一步</button>
+    </div>
+  </div>
+</div>
+
+<!-- 提现确认弹窗 -->
+<div class="modal-mask" id="withdraw-confirm-modal">
+  <div class="modal">
+    <div class="modal-title">确认提现信息</div>
+    <div id="withdraw-confirm-text" style="font-size:14px;line-height:2;"></div>
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal('withdraw-confirm-modal')">返回修改</button>
+      <button class="modal-btn modal-btn-confirm" onclick="confirmWithdraw()">确认提交</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const DB_KEY = 'zhouyu_unf_db';
+  const SESSION_KEY = 'zhouyu_unf_session';
+
+  function getDB() {
+    try {
+      const db = JSON.parse(localStorage.getItem(DB_KEY));
+      if (!db || !db.categories) return { categories: [], users: [], cards: [], orders: [], withdrawals: [] };
+      if (!db.orders) db.orders = [];
+      if (!db.withdrawals) db.withdrawals = [];
+      return db;
+    } catch { return { categories: [], users: [], cards: [], orders: [], withdrawals: [] }; }
+  }
+  function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+
+  let db = getDB();
+  let currentUser = localStorage.getItem(SESSION_KEY);
+  let activeCatId = 'all';
+  let currentBuyCatId = null;
+  let currentBuyProdId = null;
+  let buyQty = 1;
+
+  if (currentUser) showShop();
+
+  function switchTab(type) {
+    const loginTab = document.getElementById('tab-login');
+    const regTab = document.getElementById('tab-register');
+    const loginForm = document.getElementById('form-login');
+    const regForm = document.getElementById('form-register');
+    if (type === 'login') {
+      loginTab.className = 'tab tab-active';
+      regTab.className = 'tab tab-inactive';
+      loginForm.classList.remove('hidden');
+      regForm.classList.add('hidden');
+    } else {
+      loginTab.className = 'tab tab-inactive';
+      regTab.className = 'tab tab-active';
+      loginForm.classList.add('hidden');
+      regForm.classList.remove('hidden');
+    }
+  }
+
+  function doRegister() {
+    const user = document.getElementById('reg-user').value.trim();
+    const pass = document.getElementById('reg-pass').value;
+    const pass2 = document.getElementById('reg-pass2').value;
+    if (!user || user.length < 3) { showToast('账号至少3位'); return; }
+    if (!pass || pass.length < 6) { showToast('密码至少6位'); return; }
+    if (pass !== pass2) { showToast('两次密码不一致'); return; }
+    if (db.users.find(u => u.username === user)) { showToast('账号已存在'); return; }
+    db.users.push({ username: user, password: pass, balance: 0, createdAt: new Date().toISOString() });
+    saveDB(db);
+    showToast('注册成功，请登录');
+    switchTab('login');
+    document.getElementById('login-user').value = user;
+  }
+
+  function doLogin() {
+    const user = document.getElementById('login-user').value.trim();
+    const pass = document.getElementById('login-pass').value;
+    if (!user || !pass) { showToast('请输入账号和密码'); return; }
+    const found = db.users.find(u => u.username === user && u.password === pass);
+    if (!found) { showToast('账号或密码错误'); return; }
+    currentUser = user;
+    localStorage.setItem(SESSION_KEY, user);
+    showShop();
+    showToast('登录成功，欢迎回来');
+  }
+
+  function logout() {
+    currentUser = null;
+    localStorage.removeItem(SESSION_KEY);
+    document.getElementById('auth-card').classList.remove('hidden');
+    document.getElementById('shop-section').style.display = 'none';
+    document.getElementById('user-info').style.display = 'none';
+    document.getElementById('balance-box').style.display = 'none';
+    document.getElementById('btn-logout').classList.add('hidden');
+    showToast('已退出登录');
+  }
+
+  function getCurrentUser() {
+    return db.users.find(u => u.username === currentUser);
+  }
+
+  function updateBalanceDisplay() {
+    const u = getCurrentUser();
+    if (u) {
+      document.getElementById('balance-box').textContent = '余额：¥' + (u.balance || 0).toFixed(2);
+      document.getElementById('balance-box').style.display = 'inline-block';
+    }
+  }
+
+  function showShop() {
+    document.getElementById('auth-card').classList.add('hidden');
+    document.getElementById('shop-section').style.display = 'block';
+    document.getElementById('user-info').style.display = 'inline-block';
+    document.getElementById('username-display').textContent = currentUser;
+    document.getElementById('btn-logout').classList.remove('hidden');
+    updateBalanceDisplay();
+    renderShop();
+  }
+
+  // 充值
+  function doRecharge() {
+    const code = document.getElementById('recharge-code').value.trim().toUpperCase();
+    if (!code) { showToast('请输入卡密'); return; }
+
+    const card = db.cards.find(c => c.code.toUpperCase() === code);
+    if (!card) { showToast('卡密不存在'); return; }
+
+    // 检查是否失效
+    if (card.usedCount >= card.maxUses) { showToast('卡密已用完'); return; }
+    if (card.expireAt && new Date(card.expireAt) < new Date()) { showToast('卡密已过期'); return; }
+
+    // 检查每人使用次数
+    const usedByUser = card.usedBy[currentUser] || 0;
+    if (usedByUser >= card.perUserLimit) { showToast('该卡密你已使用过'); return; }
+
+    // 充值
+    const u = getCurrentUser();
+    u.balance = (u.balance || 0) + card.value;
+    card.usedCount++;
+    card.usedBy[currentUser] = usedByUser + 1;
+    saveDB(db);
+
+    document.getElementById('recharge-code').value = '';
+    updateBalanceDisplay();
+    showToast(`充值成功，+¥${card.value.toFixed(2)}`);
+  }
+
+  function renderShop() {
+    db = getDB();
+    updateBalanceDisplay();
+    renderCategoryTabs();
+    renderProducts();
+    renderMyOrders();
+  }
+
+  function renderMyOrders() {
+    const el = document.getElementById('my-orders');
+    // 只显示待发货、取消申请中、已发货待确认的订单，已取消和已完成的都不显示
+    const myOrders = (db.orders || [])
+      .filter(o => o.username === currentUser && o.status !== 'cancelled')
+      .reverse();
+    if (myOrders.length === 0) {
+      el.innerHTML = '<div style="text-align:center; padding: 24px; color: rgba(255,255,255,0.3); font-size: 14px;">暂无订单</div>';
+      return;
+    }
+    let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    myOrders.forEach(o => {
+      const time = new Date(o.createdAt).toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+      let statusHtml = '', btnHtml = '';
+      
+      if (o.status === 'canceling') {
+        statusHtml = '<span style="color:#f59e0b;font-size:12px;">取消申请中...</span>';
+        btnHtml = '<span style="color:rgba(255,255,255,0.3);font-size:12px;">等待后台确认</span>';
+      } else if (o.status === 'completed') {
+        statusHtml = '<span style="color:#4ade80;font-size:12px;">已发货·待确认</span>';
+        btnHtml = `<button class="recharge-btn" style="padding:8px 16px;font-size:13px;" onclick="confirmReceive('${o.id}')">确认收货</button>`;
+      } else {
+        statusHtml = '<span style="color:#fb923c;font-size:12px;">待发货</span>';
+        btnHtml = `<button style="padding:8px 16px;font-size:13px;background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);border-radius:8px;cursor:pointer;" onclick="requestCancelOrder('${o.id}')">取消订单</button>`;
+      }
+      
+      html += `<div style="background:rgba(6,10,22,0.6);border:1px solid rgba(56,224,255,0.15);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:15px;font-weight:500;">${escapeHtml(o.productName)} × ${o.qty} ${statusHtml}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">金额：¥${o.total.toFixed(2)} · ${escapeHtml(o.idType)}：${escapeHtml(o.idValue)} · ${time}</div>
+        </div>
+        ${btnHtml}
+      </div>`;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  function requestCancelOrder(orderId) {
+    if (!confirm('确定申请取消该订单？取消后金额将退回余额')) return;
+    const order = (db.orders || []).find(o => o.id === orderId);
+    if (order) order.status = 'canceling';
+    saveDB(db);
+    renderMyOrders();
+    showToast('取消申请已提交，等待后台确认');
+  }
+
+  function confirmReceive(orderId) {
+    if (!confirm('确认已收到货？确认后订单将关闭')) return;
+    db.orders = (db.orders || []).filter(o => o.id !== orderId);
+    saveDB(db);
+    renderMyOrders();
+    showToast('已确认收货');
+  }
+
+  // ===== 提现 =====
+  function openWithdrawModal() {
+    const u = getCurrentUser();
+    document.getElementById('withdraw-balance').textContent = (u.balance || 0).toFixed(2);
+    document.getElementById('withdraw-amount').value = '';
+    document.getElementById('withdraw-real').textContent = '0.00';
+    document.getElementById('wx-info').value = '';
+    document.getElementById('alipay-info').value = '';
+    toggleWithdrawType();
+    document.getElementById('withdraw-modal').classList.add('show');
+  }
+
+  function toggleWithdrawType() {
+    const type = document.querySelector('input[name="withdraw-type"]:checked').value;
+    document.getElementById('wx-info-group').style.display = type === '微信' ? 'block' : 'none';
+    document.getElementById('alipay-info-group').style.display = type === '支付宝' ? 'block' : 'none';
+  }
+
+  let wxQrcodeData = '', alipayQrcodeData = '';
+
+  function uploadQrcode(type) {
+    const input = document.getElementById(type + '-qrcode');
+    const preview = document.getElementById(type + '-qrcode-preview');
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      if (type === 'wx') wxQrcodeData = e.target.result;
+      else alipayQrcodeData = e.target.result;
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  document.getElementById('withdraw-amount').addEventListener('input', function() {
+    const amt = parseFloat(this.value) || 0;
+    document.getElementById('withdraw-real').textContent = (amt * 0.98).toFixed(2);
+  });
+
+  function submitWithdraw() {
+    const type = document.querySelector('input[name="withdraw-type"]:checked').value;
+    const info = type === '微信' ? document.getElementById('wx-info').value.trim() : document.getElementById('alipay-info').value.trim();
+    const qrcode = type === '微信' ? wxQrcodeData : alipayQrcodeData;
+    const amount = parseFloat(document.getElementById('withdraw-amount').value);
+    const u = getCurrentUser();
+
+    if (!info && !qrcode) { showToast('请输入收款信息或上传收款码'); return; }
+    if (!amount || amount <= 0) { showToast('请输入有效金额'); return; }
+    if (amount > (u.balance || 0)) { showToast('余额不足'); return; }
+
+    const realAmount = amount * 0.98;
+    let html = `
+      提现方式：${type}<br>
+      收款信息：${escapeHtml(info) || '（仅收款码）'}<br>
+      申请金额：¥${amount.toFixed(2)}<br>
+      手续费（2%）：¥${(amount * 0.02).toFixed(2)}<br>
+      实际到账：<span style="color:#fb923c;font-weight:bold;">¥${realAmount.toFixed(2)}</span>
+    `;
+    if (qrcode) {
+      html += `<br>收款码：<br><img src="${qrcode}" style="max-width:120px;border-radius:8px;margin-top:6px;">`;
+    }
+    document.getElementById('withdraw-confirm-text').innerHTML = html;
+    document.getElementById('withdraw-modal').classList.remove('show');
+    document.getElementById('withdraw-confirm-modal').classList.add('show');
+  }
+
+  function confirmWithdraw() {
+    const type = document.querySelector('input[name="withdraw-type"]:checked').value;
+    const info = type === '微信' ? document.getElementById('wx-info').value.trim() : document.getElementById('alipay-info').value.trim();
+    const qrcode = type === '微信' ? wxQrcodeData : alipayQrcodeData;
+    const amount = parseFloat(document.getElementById('withdraw-amount').value);
+    const realAmount = amount * 0.98;
+    const u = getCurrentUser();
+
+    u.balance -= amount;
+
+    if (!db.withdrawals) db.withdrawals = [];
+    db.withdrawals.push({
+      id: 'wd_' + Date.now(),
+      username: currentUser,
+      type: type,
+      info: info,
+      qrcode: qrcode,
+      amount: amount,
+      realAmount: realAmount,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    });
+
+    saveDB(db);
+    closeModal('withdraw-confirm-modal');
+    updateBalanceDisplay();
+    showToast('提现申请已提交，等待处理');
+    // 清空
+    wxQrcodeData = ''; alipayQrcodeData = '';
+    document.getElementById('wx-qrcode-preview').style.display = 'none';
+    document.getElementById('alipay-qrcode-preview').style.display = 'none';
+  }
+
+  function renderCategoryTabs() {
+    const tabs = document.getElementById('category-tabs');
+    let html = `<div class="cat-tab ${activeCatId === 'all' ? 'active' : ''}" onclick="switchCat('all')">全部商品</div>`;
+    db.categories.forEach(cat => {
+      const prodCount = cat.products.length;
+      html += `<div class="cat-tab ${activeCatId === cat.id ? 'active' : ''}" onclick="switchCat('${cat.id}')">${escapeHtml(cat.name)} (${prodCount})</div>`;
+    });
+    tabs.innerHTML = html;
+  }
+
+  function switchCat(catId) {
+    activeCatId = catId;
+    renderCategoryTabs();
+    renderProducts();
+  }
+
+  function renderProducts() {
+    const container = document.getElementById('product-container');
+    let allProducts = [];
+    db.categories.forEach(cat => {
+      cat.products.forEach(p => {
+        allProducts.push({ ...p, catName: cat.name, catId: cat.id });
+      });
+    });
+    let filtered = activeCatId === 'all' ? allProducts : allProducts.filter(p => p.catId === activeCatId);
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state">暂无商品，请等待上架</div>';
+      return;
+    }
+
+    container.innerHTML = `<div class="product-grid">
+      ${filtered.map(p => {
+        const inStock = p.stock > 0;
+        const badge = inStock
+          ? `<div class="product-badge badge-stock">库存 ${p.stock}</div>`
+          : `<div class="product-badge badge-soldout">已售罄</div>`;
+        return `
+          <div class="product-card">
+            <div class="product-img">${badge}</div>
+            <div class="product-info">
+              <div class="product-cat">${escapeHtml(p.catName)}</div>
+              <div class="product-name">${escapeHtml(p.name)}</div>
+              <div class="product-price">¥${p.price.toFixed(2)} <span>/ 个</span></div>
+              <button class="buy-btn" ${inStock ? '' : 'disabled'} onclick="openBuyModal('${p.catId}', '${p.id}')">
+                ${inStock ? '立即购买' : '已售罄'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>`;
+  }
+
+  function openBuyModal(catId, prodId) {
+    currentBuyCatId = catId;
+    currentBuyProdId = prodId;
+    buyQty = 1;
+    const cat = db.categories.find(c => c.id === catId);
+    const prod = cat.products.find(p => p.id === prodId);
+    const u = getCurrentUser();
+    document.getElementById('modal-product-name').textContent = prod.name;
+    document.getElementById('modal-price').textContent = '¥' + prod.price.toFixed(2);
+    document.getElementById('modal-balance').textContent = '¥' + (u.balance || 0).toFixed(2);
+    updateBuyTotal();
+    document.getElementById('buy-modal').classList.add('show');
+  }
+
+  function updateBuyTotal() {
+    const cat = db.categories.find(c => c.id === currentBuyCatId);
+    const prod = cat.products.find(p => p.id === currentBuyProdId);
+    document.getElementById('modal-qty').textContent = buyQty;
+    document.getElementById('modal-total').textContent = '¥' + (prod.price * buyQty).toFixed(2);
+  }
+
+  function changeQty(delta) {
+    const cat = db.categories.find(c => c.id === currentBuyCatId);
+    const prod = cat.products.find(p => p.id === currentBuyProdId);
+    buyQty = Math.max(1, Math.min(prod.stock, buyQty + delta));
+    updateBuyTotal();
+  }
+
+  function confirmBuy() {
+    const cat = db.categories.find(c => c.id === currentBuyCatId);
+    const prod = cat.products.find(p => p.id === currentBuyProdId);
+    const u = getCurrentUser();
+    const total = prod.price * buyQty;
+    const digitalId = document.getElementById('buy-digitalid').value.trim();
+    const textId = document.getElementById('buy-textid').value.trim();
+    const teamCode = document.getElementById('buy-teamcode').value.trim();
+
+    if (buyQty > prod.stock) { showToast('库存不足'); return; }
+    if (!digitalId && !textId && !teamCode) { showToast('请至少填写一项：数字ID / 文字ID / 组队码'); return; }
+    if ((u.balance || 0) < total) { showToast('余额不足，请先充值'); return; }
+
+    // 确定填的是哪种
+    let idType = '', idValue = '';
+    if (digitalId) { idType = '数字ID'; idValue = digitalId; }
+    else if (textId) { idType = '文字ID'; idValue = textId; }
+    else { idType = '组队码'; idValue = teamCode; }
+
+    u.balance -= total;
+    prod.stock -= buyQty;
+
+    // 保存订单
+    if (!db.orders) db.orders = [];
+    db.orders.push({
+      id: 'order_' + Date.now(),
+      username: u.username,
+      productName: prod.name,
+      price: prod.price,
+      qty: buyQty,
+      total: total,
+      idType: idType,
+      idValue: idValue,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    });
+
+    saveDB(db);
+    closeModal('buy-modal');
+    updateBalanceDisplay();
+    renderShop();
+    setTimeout(() => { document.getElementById('success-modal').classList.add('show'); }, 300);
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(-20px)';
+    }, 2000);
+  }
+
+  function escapeHtml(s) {
+    const div = document.createElement('div'); div.textContent = s; return div.innerHTML;
+  }
+
+  document.querySelectorAll('.modal-mask').forEach(m => {
+    m.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+  });
+
+  setInterval(() => { if (currentUser) renderShop(); }, 3000);
+</script>
+
+</body>
+</html>

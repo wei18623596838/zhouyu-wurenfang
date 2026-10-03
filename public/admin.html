@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>周瑜无人房 - 管理后台</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: rgb(5, 7, 15);
+    color: rgb(217, 246, 255);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+  .header h1 { font-size: 24px; color: rgb(56, 224, 255); }
+
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-box {
+    background: rgba(6, 10, 22, 0.8);
+    border: 1px solid rgba(56, 224, 255, 0.2);
+    border-radius: 10px; padding: 16px; text-align: center;
+  }
+  .stat-num { font-size: 24px; font-weight: bold; color: rgb(56, 224, 255); }
+  .stat-label { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid rgba(56,224,255,0.1); padding-bottom: 12px; }
+  .tab-btn {
+    padding: 10px 20px; border-radius: 8px; cursor: pointer;
+    background: rgba(56,224,255,0.05); color: rgba(255,255,255,0.6);
+    border: 1px solid transparent; font-size: 14px;
+  }
+  .tab-btn.active { background: rgba(6,182,212,0.2); border-color: rgba(6,182,212,0.4); color: rgb(165,243,252); }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .section-head h2 { font-size: 18px; color: rgb(165,243,252); }
+
+  .btn {
+    padding: 10px 18px; border-radius: 8px; cursor: pointer;
+    border: none; font-size: 14px; font-weight: 500;
+  }
+  .btn-primary { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: white; }
+  .btn-danger { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+  .btn-outline { background: rgba(56,224,255,0.1); color: #a5f3fc; border: 1px solid rgba(56,224,255,0.3); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  .cat-block {
+    background: rgba(6,10,22,0.6);
+    border: 1px solid rgba(56,224,255,0.15);
+    border-radius: 12px; padding: 16px; margin-bottom: 12px;
+  }
+  .cat-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(56,224,255,0.1); }
+  .cat-name { font-size: 16px; font-weight: 600; color: rgb(165,243,252); }
+
+  .prod-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .prod-item {
+    background: rgba(56,224,255,0.05); border-radius: 8px; padding: 12px;
+  }
+  .prod-name { font-size: 14px; margin-bottom: 6px; }
+  .prod-price { color: #fb923c; font-weight: 600; margin-bottom: 6px; }
+  .prod-stock { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+  .prod-actions { display: flex; gap: 6px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(56,224,255,0.1); font-size: 13px; }
+  th { color: rgba(255,255,255,0.5); font-weight: normal; }
+  .code { font-family: monospace; color: rgb(56,224,255); }
+
+  .empty { text-align: center; padding: 40px; color: rgba(255,255,255,0.3); }
+
+  .modal-mask {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-mask.show { display: flex; }
+  .modal {
+    background: rgb(10,15,30); border: 1px solid rgba(56,224,255,0.2);
+    border-radius: 12px; padding: 24px; width: 90%; max-width: 450px;
+  }
+  .modal h3 { margin-bottom: 16px; color: rgb(165,243,252); }
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+  .form-row input {
+    width: 100%; padding: 10px 12px; background: rgba(6,10,22,0.8);
+    border: 1px solid rgba(56,224,255,0.25); border-radius: 8px;
+    color: white; font-size: 14px;
+  }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-btns .btn { flex: 1; }
+
+  .result-box {
+    background: rgba(6,10,22,0.8); border: 1px dashed rgba(56,224,255,0.4);
+    border-radius: 8px; padding: 12px; margin: 12px 0;
+    font-family: monospace; font-size: 14px; color: rgb(56,224,255);
+    white-space: pre-line; max-height: 200px; overflow-y: auto;
+  }
+
+  #toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(6,182,212,0.9); color: white; padding: 10px 20px;
+    border-radius: 8px; font-size: 14px; z-index: 999; display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>周瑜无人房 · 管理后台</h1>
+    <button class="btn btn-outline" onclick="showToast('数据已自动保存')">💾 数据状态</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat-box"><div class="stat-num" id="s-cats">0</div><div class="stat-label">商品分类</div></div>
+    <div class="stat-box"><div class="stat-num" id="s-prods">0</div><div class="stat-label">商品总数</div></div>
+    <div class="stat-box"><div class="stat-num" id="s-orders">0</div><div class="stat-label">待处理订单</div></div>
+    <div class="stat-box"><div class="stat-num" id="s-cards">0</div><div class="stat-label">有效卡密</div></div>
+    <div class="stat-box"><div class="stat-num" id="s-users">0</div><div class="stat-label">注册用户</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab-btn active" onclick="showTab('goods')">📦 商品管理</div>
+    <div class="tab-btn" onclick="showTab('orders')">📋 订单列表</div>
+    <div class="tab-btn" onclick="showTab('withdrawals')">💰 提现列表</div>
+    <div class="tab-btn" onclick="showTab('cards')">🎫 卡密管理</div>
+    <div class="tab-btn" onclick="showTab('users')">👥 用户列表</div>
+  </div>
+
+  <!-- 商品管理 -->
+  <div id="tab-goods" class="section active">
+    <div class="section-head">
+      <h2>商品分类管理</h2>
+      <button class="btn btn-primary" onclick="openCatModal()">+ 创建分类</button>
+    </div>
+    <div id="cat-list"></div>
+  </div>
+
+  <!-- 订单列表 -->
+  <div id="tab-orders" class="section">
+    <div class="section-head">
+      <h2>用户订单</h2>
+    </div>
+    <div id="order-list"></div>
+  </div>
+
+  <!-- 提现列表 -->
+  <div id="tab-withdrawals" class="section">
+    <div class="section-head">
+      <h2>提现申请</h2>
+    </div>
+    <div id="withdrawal-list"></div>
+  </div>
+
+  <!-- 卡密管理 -->
+  <div id="tab-cards" class="section">
+    <div class="section-head">
+      <h2>卡密列表</h2>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" onclick="copyAllCards()">一键复制全部</button>
+        <button class="btn btn-outline" onclick="toggleSelectAll()" id="btn-select-all">全选</button>
+        <button class="btn btn-danger" onclick="batchDelete()">批量删除</button>
+        <button class="btn btn-primary" onclick="openGenModal()">+ 生成卡密</button>
+      </div>
+    </div>
+    <div id="card-list"></div>
+  </div>
+
+  <!-- 用户列表 -->
+  <div id="tab-users" class="section">
+    <div class="section-head">
+      <h2>注册用户</h2>
+    </div>
+    <div id="user-list"></div>
+  </div>
+</div>
+
+<!-- 创建分类弹窗 -->
+<div class="modal-mask" id="cat-modal">
+  <div class="modal">
+    <h3>创建商品分类</h3>
+    <div class="form-row">
+      <label>分类名称</label>
+      <input type="text" id="cat-name" placeholder="例如：GZ无限授权">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeModal('cat-modal')">取消</button>
+      <button class="btn btn-primary" onclick="createCat()">创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- 创建商品弹窗 -->
+<div class="modal-mask" id="prod-modal">
+  <div class="modal">
+    <h3>创建商品</h3>
+    <div class="form-row">
+      <label>所属分类</label>
+      <input type="text" id="prod-cat" disabled style="opacity:0.6">
+    </div>
+    <div class="form-row">
+      <label>商品名称</label>
+      <input type="text" id="prod-name" placeholder="商品名称">
+    </div>
+    <div class="two-col">
+      <div class="form-row">
+        <label>价格（元）</label>
+        <input type="number" id="prod-price" placeholder="2.00" step="0.01">
+      </div>
+      <div class="form-row">
+        <label>初始库存</label>
+        <input type="number" id="prod-stock" placeholder="10" value="10">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeModal('prod-modal')">取消</button>
+      <button class="btn btn-primary" onclick="createProd()">创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- 补货弹窗 -->
+<div class="modal-mask" id="restock-modal">
+  <div class="modal">
+    <h3>商品补货</h3>
+    <div class="form-row">
+      <label>商品</label>
+      <input type="text" id="restock-name" disabled style="opacity:0.6">
+    </div>
+    <div class="form-row">
+      <label>补货数量</label>
+      <input type="number" id="restock-count" placeholder="10" value="10" min="1">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeModal('restock-modal')">取消</button>
+      <button class="btn btn-primary" onclick="doRestock()">确认补货</button>
+    </div>
+  </div>
+</div>
+
+<!-- 生成卡密弹窗 -->
+<div class="modal-mask" id="gen-modal">
+  <div class="modal">
+    <h3>生成充值卡密</h3>
+    <div class="two-col">
+      <div class="form-row">
+        <label>生成数量</label>
+        <input type="number" id="gen-count" value="1" min="1">
+      </div>
+      <div class="form-row">
+        <label>卡密价值（元）</label>
+        <input type="number" id="gen-value" value="10" step="0.01" min="0">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="form-row">
+        <label>到期时间</label>
+        <input type="date" id="gen-expire">
+      </div>
+      <div class="form-row">
+        <label>总使用次数</label>
+        <input type="number" id="gen-maxuses" value="1" min="1">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>每人可使用次数</label>
+      <input type="number" id="gen-peruser" value="1" min="1">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeModal('gen-modal')">取消</button>
+      <button class="btn btn-primary" onclick="doGenerate()">生成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 生成结果弹窗 -->
+<div class="modal-mask" id="result-modal">
+  <div class="modal">
+    <h3>✅ 生成成功</h3>
+    <p style="font-size:13px; color:rgba(255,255,255,0.6); margin-bottom:10px;">以下是生成的卡密，请复制保存：</p>
+    <div class="result-box" id="result-text"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="copyAll()">一键复制全部</button>
+      <button class="btn btn-primary" onclick="closeModal('result-modal')">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑卡密弹窗 -->
+<div class="modal-mask" id="edit-modal">
+  <div class="modal">
+    <h3>编辑卡密</h3>
+    <div class="form-row">
+      <label>卡密</label>
+      <input type="text" id="edit-code" disabled style="opacity:0.6">
+    </div>
+    <div class="two-col">
+      <div class="form-row">
+        <label>价值（元）</label>
+        <input type="number" id="edit-value" step="0.01">
+      </div>
+      <div class="form-row">
+        <label>到期时间</label>
+        <input type="date" id="edit-expire">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="form-row">
+        <label>总使用次数</label>
+        <input type="number" id="edit-maxuses" min="0">
+      </div>
+      <div class="form-row">
+        <label>每人使用次数</label>
+        <input type="number" id="edit-peruser" min="0">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeModal('edit-modal')">取消</button>
+      <button class="btn btn-primary" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const DB_KEY = 'zhouyu_unf_db';
+
+  function getDB() {
+    try {
+      const d = JSON.parse(localStorage.getItem(DB_KEY));
+      if (d && d.categories) {
+        if (!d.cards) d.cards = [];
+        if (!d.users) d.users = [];
+        if (!d.orders) d.orders = [];
+        if (!d.withdrawals) d.withdrawals = [];
+        return d;
+      }
+    } catch(e) {}
+    return { categories: [], users: [], cards: [], orders: [], withdrawals: [] };
+  }
+  function saveDB() { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+
+  let db = getDB();
+  let curCatId = null, curProdId = null, curCardId = null;
+
+  function showTab(name) {
+    document.querySelectorAll('.tab-btn').forEach((t,i) => {
+      t.classList.toggle('active', ['goods','orders','withdrawals','cards','users'][i] === name);
+    });
+    document.getElementById('tab-goods').classList.toggle('active', name === 'goods');
+    document.getElementById('tab-orders').classList.toggle('active', name === 'orders');
+    document.getElementById('tab-withdrawals').classList.toggle('active', name === 'withdrawals');
+    document.getElementById('tab-cards').classList.toggle('active', name === 'cards');
+    document.getElementById('tab-users').classList.toggle('active', name === 'users');
+    if (name === 'orders') renderOrders();
+    if (name === 'withdrawals') renderWithdrawals();
+    if (name === 'cards') renderCards();
+    if (name === 'users') renderUsers();
+  }
+
+  function isCardActive(c) {
+    if (c.usedCount >= c.maxUses) return false;
+    if (c.expireAt && new Date(c.expireAt) < new Date()) return false;
+    return true;
+  }
+
+  function updateStats() {
+    let prods = 0;
+    db.categories.forEach(c => c.products.forEach(() => prods++));
+    const activeCards = db.cards.filter(c => isCardActive(c)).length;
+    const orderCount = (db.orders || []).length;
+    const userCount = db.users.length;
+    document.getElementById('s-cats').textContent = db.categories.length;
+    document.getElementById('s-prods').textContent = prods;
+    document.getElementById('s-orders').textContent = orderCount;
+    document.getElementById('s-cards').textContent = activeCards;
+    document.getElementById('s-users').textContent = userCount;
+  }
+
+  // ===== 商品 =====
+  function renderCats() {
+    const el = document.getElementById('cat-list');
+    if (db.categories.length === 0) {
+      el.innerHTML = '<div class="empty">暂无分类，点右上角"创建分类"开始</div>';
+    } else {
+      el.innerHTML = db.categories.map(c => `
+        <div class="cat-block">
+          <div class="cat-head">
+            <div class="cat-name">${esc(c.name)}</div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-primary btn-sm" onclick="openProdModal('${c.id}')">+ 商品</button>
+              <button class="btn btn-danger btn-sm" onclick="delCat('${c.id}')">删除分类</button>
+            </div>
+          </div>
+          ${c.products.length === 0
+            ? '<div class="empty" style="padding:16px">该分类下暂无商品</div>'
+            : `<div class="prod-grid">
+                ${c.products.map(p => `
+                  <div class="prod-item">
+                    <div class="prod-name">${esc(p.name)}</div>
+                    <div class="prod-price">¥${p.price.toFixed(2)}</div>
+                    <div class="prod-stock">库存：${p.stock} 个</div>
+                    <div class="prod-actions">
+                      <button class="btn btn-outline btn-sm" onclick="openRestockModal('${c.id}','${p.id}')">补货</button>
+                      <button class="btn btn-danger btn-sm" onclick="delProd('${c.id}','${p.id}')">删除</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>`
+          }
+        </div>
+      `).join('');
+    }
+    updateStats();
+  }
+
+  function openCatModal() {
+    document.getElementById('cat-name').value = '';
+    document.getElementById('cat-modal').classList.add('show');
+  }
+  function createCat() {
+    const name = document.getElementById('cat-name').value.trim();
+    if (!name) { showToast('请输入分类名'); return; }
+    if (db.categories.find(c => c.name === name)) { showToast('分类已存在'); return; }
+    db.categories.push({ id: 'cat_'+Date.now(), name, products: [] });
+    saveDB(); renderCats(); closeModal('cat-modal');
+    showToast('创建成功');
+  }
+  function delCat(id) {
+    if (!confirm('确定删除？')) return;
+    db.categories = db.categories.filter(c => c.id !== id);
+    saveDB(); renderCats();
+  }
+
+  function openProdModal(catId) {
+    curCatId = catId;
+    const cat = db.categories.find(c => c.id === catId);
+    document.getElementById('prod-cat').value = cat.name;
+    document.getElementById('prod-name').value = '';
+    document.getElementById('prod-price').value = '';
+    document.getElementById('prod-stock').value = '10';
+    document.getElementById('prod-modal').classList.add('show');
+  }
+  function createProd() {
+    const name = document.getElementById('prod-name').value.trim();
+    const price = parseFloat(document.getElementById('prod-price').value);
+    const stock = parseInt(document.getElementById('prod-stock').value);
+    if (!name) { showToast('请输入商品名'); return; }
+    if (isNaN(price) || price < 0) { showToast('价格无效'); return; }
+    if (isNaN(stock) || stock < 0) { showToast('库存无效'); return; }
+    const cat = db.categories.find(c => c.id === curCatId);
+    cat.products.push({ id: 'prod_'+Date.now(), name, price, stock });
+    saveDB(); renderCats(); closeModal('prod-modal');
+    showToast('商品创建成功');
+  }
+  function delProd(catId, prodId) {
+    if (!confirm('确定删除？')) return;
+    const cat = db.categories.find(c => c.id === catId);
+    cat.products = cat.products.filter(p => p.id !== prodId);
+    saveDB(); renderCats();
+  }
+
+  function openRestockModal(catId, prodId) {
+    curCatId = catId; curProdId = prodId;
+    const cat = db.categories.find(c => c.id === catId);
+    const prod = cat.products.find(p => p.id === prodId);
+    document.getElementById('restock-name').value = prod.name;
+    document.getElementById('restock-count').value = '10';
+    document.getElementById('restock-modal').classList.add('show');
+  }
+  function doRestock() {
+    const count = parseInt(document.getElementById('restock-count').value);
+    if (!count || count <= 0) { showToast('数量无效'); return; }
+    const cat = db.categories.find(c => c.id === curCatId);
+    const prod = cat.products.find(p => p.id === curProdId);
+    prod.stock += count;
+    saveDB(); renderCats(); closeModal('restock-modal');
+    showToast('补货成功 +' + count);
+  }
+
+  // ===== 卡密 =====
+  function renderCards() {
+    const el = document.getElementById('card-list');
+    const active = db.cards.filter(c => isCardActive(c));
+    if (active.length === 0) {
+      el.innerHTML = '<div class="empty">暂无有效卡密，点右上角"生成卡密"创建</div>';
+      updateStats();
+      return;
+    }
+    let html = `<table><thead><tr>
+      <th style="width:40px"><input type="checkbox" id="check-all" onchange="toggleSelectAll()"></th>
+      <th>卡密</th><th>价值</th><th>到期时间</th><th>剩余次数</th><th>每人次数</th><th>操作</th>
+    </tr></thead><tbody>`;
+    active.forEach(c => {
+      html += `<tr>
+        <td><input type="checkbox" class="card-check" value="${c.id}"></td>
+        <td class="code">${esc(c.code)}</td>
+        <td>¥${c.value.toFixed(2)}</td>
+        <td>${c.expireAt || '永久'}</td>
+        <td>${c.usedCount}/${c.maxUses}</td>
+        <td>${c.perUserLimit}</td>
+        <td>
+          <button class="btn btn-outline btn-sm" onclick="openEditModal('${c.id}')">编辑</button>
+          <button class="btn btn-danger btn-sm" onclick="delCard('${c.id}')">删除</button>
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+    updateStats();
+  }
+
+  function toggleSelectAll() {
+    const all = document.getElementById('check-all');
+    document.querySelectorAll('.card-check').forEach(cb => {
+      cb.checked = all.checked;
+    });
+    document.getElementById('btn-select-all').textContent = all.checked ? '取消全选' : '全选';
+  }
+
+  function batchDelete() {
+    const checked = document.querySelectorAll('.card-check:checked');
+    if (checked.length === 0) { showToast('请先勾选要删除的卡密'); return; }
+    if (!confirm(`确定删除选中的 ${checked.length} 个卡密？`)) return;
+    const ids = Array.from(checked).map(cb => cb.value);
+    db.cards = db.cards.filter(c => !ids.includes(c.id));
+    saveDB();
+    renderCards();
+    showToast('已删除 ' + ids.length + ' 个卡密');
+  }
+
+  function copyAllCards() {
+    const active = db.cards.filter(c => isCardActive(c));
+    if (active.length === 0) { showToast('暂无卡密可复制'); return; }
+    const text = active.map((c, i) => `${i+1} ${c.code}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('已复制全部 ' + active.length + ' 个卡密');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('已复制全部 ' + active.length + ' 个卡密');
+    });
+  }
+
+  function genCode() {
+    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const digits = '23456789';
+    const chars = letters + digits;
+    let code = 'ZY-';
+    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random()*chars.length)];
+    code += '-';
+    for (let i = 0; i < 4; i++) code += letters[Math.floor(Math.random()*letters.length)];
+    code += '-';
+    for (let i = 0; i < 4; i++) code += digits[Math.floor(Math.random()*digits.length)];
+    return code;
+  }
+
+  function openGenModal() {
+    document.getElementById('gen-count').value = '1';
+    document.getElementById('gen-value').value = '10';
+    document.getElementById('gen-expire').value = new Date(Date.now()+30*86400000).toISOString().split('T')[0];
+    document.getElementById('gen-maxuses').value = '1';
+    document.getElementById('gen-peruser').value = '1';
+    document.getElementById('gen-modal').classList.add('show');
+  }
+
+  function doGenerate() {
+    try {
+      const count = parseInt(document.getElementById('gen-count').value);
+      const value = parseFloat(document.getElementById('gen-value').value);
+      const expireAt = document.getElementById('gen-expire').value;
+      const maxUses = parseInt(document.getElementById('gen-maxuses').value);
+      const perUser = parseInt(document.getElementById('gen-peruser').value);
+
+      if (!count || count < 1) { showToast('数量无效'); return; }
+      if (isNaN(value) || value <= 0) { showToast('价值无效'); return; }
+      if (!expireAt) { showToast('请选到期时间'); return; }
+      if (!maxUses || maxUses < 1) { showToast('总次数无效'); return; }
+      if (!perUser || perUser < 1) { showToast('每人次数无效'); return; }
+
+      // 确保 cards 数组存在
+      if (!db.cards) db.cards = [];
+
+      let made = [];
+      for (let i = 0; i < count; i++) {
+        let code = genCode();
+        while (db.cards.find(c => c.code === code && isCardActive(c))) {
+          code = genCode();
+        }
+        db.cards.push({
+          id: 'card_'+Date.now()+'_'+i,
+          code, value, expireAt, maxUses, perUserLimit: perUser,
+          usedCount: 0, usedBy: {}, createdAt: new Date().toISOString()
+        });
+        made.push(code);
+      }
+      saveDB();
+      closeModal('gen-modal');
+      renderCards();
+
+      // 生成带序号的文本
+      window._lastGenerated = made.map((c, i) => `${i+1} ${c}`).join('\n');
+      document.getElementById('result-text').textContent = window._lastGenerated;
+      document.getElementById('result-modal').classList.add('show');
+      showToast('成功生成 ' + made.length + ' 个卡密');
+    } catch(e) {
+      showToast('出错了：' + e.message);
+      console.error(e);
+    }
+  }
+
+  function copyAll() {
+    const text = window._lastGenerated || document.getElementById('result-text').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('已复制全部卡密');
+    }).catch(() => {
+      // 降级方案
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('已复制全部卡密');
+    });
+  }
+
+  function openEditModal(id) {
+    curCardId = id;
+    const c = db.cards.find(x => x.id === id);
+    document.getElementById('edit-code').value = c.code;
+    document.getElementById('edit-value').value = c.value;
+    document.getElementById('edit-expire').value = c.expireAt;
+    document.getElementById('edit-maxuses').value = c.maxUses;
+    document.getElementById('edit-peruser').value = c.perUserLimit;
+    document.getElementById('edit-modal').classList.add('show');
+  }
+  function saveEdit() {
+    const c = db.cards.find(x => x.id === curCardId);
+    c.value = parseFloat(document.getElementById('edit-value').value);
+    c.expireAt = document.getElementById('edit-expire').value;
+    c.maxUses = parseInt(document.getElementById('edit-maxuses').value);
+    c.perUserLimit = parseInt(document.getElementById('edit-peruser').value);
+    saveDB(); renderCards(); closeModal('edit-modal');
+    showToast('已保存');
+  }
+  function delCard(id) {
+    if (!confirm('确定删除？')) return;
+    db.cards = db.cards.filter(c => c.id !== id);
+    saveDB(); renderCards(); showToast('已删除');
+  }
+
+  // ===== 订单 =====
+  function renderOrders() {
+    const el = document.getElementById('order-list');
+    const orders = db.orders || [];
+    if (orders.length === 0) {
+      el.innerHTML = '<div class="empty">暂无订单</div>';
+      updateStats();
+      return;
+    }
+    const sorted = [...orders].reverse().filter(o => o.status !== 'cancelled');
+    let html = `<table><thead><tr>
+      <th>用户</th><th>商品</th><th>数量</th><th>金额</th><th>类型</th><th>ID/组队码</th><th>状态</th><th>时间</th><th>操作</th>
+    </tr></thead><tbody>`;
+    sorted.forEach(o => {
+      const time = new Date(o.createdAt).toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+      let status = '', actionBtn = '';
+      
+      if (o.status === 'pending') {
+        status = '<span style="color:#fb923c">待发货</span>';
+        actionBtn = `
+          <button class="btn btn-primary btn-sm" onclick="completeOrder('${o.id}')">标记已发货</button>
+          <button class="btn btn-danger btn-sm" onclick="adminCancelOrder('${o.id}')">取消订单</button>
+        `;
+      } else if (o.status === 'canceling') {
+        status = '<span style="color:#f59e0b">用户申请取消</span>';
+        actionBtn = `
+          <button class="btn btn-danger btn-sm" onclick="confirmCancelOrder('${o.id}')">确认取消并退款</button>
+        `;
+      } else if (o.status === 'completed') {
+        status = '<span style="color:#4ade80">已发货·待确认</span>';
+        actionBtn = '<span style="color:rgba(255,255,255,0.3);font-size:12px">等用户确认</span>';
+      }
+      
+      html += `<tr>
+        <td>${esc(o.username)}</td>
+        <td>${esc(o.productName)}</td>
+        <td>${o.qty}</td>
+        <td style="color:#fb923c">¥${o.total.toFixed(2)}</td>
+        <td>${esc(o.idType || '游戏ID')}</td>
+        <td>${esc(o.idValue || '')}</td>
+        <td>${status}</td>
+        <td style="font-size:12px;color:rgba(255,255,255,0.5)">${time}</td>
+        <td>${actionBtn}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+    updateStats();
+  }
+
+  function completeOrder(id) {
+    if (!confirm('确认该订单已发货？')) return;
+    const order = (db.orders || []).find(o => o.id === id);
+    if (order) order.status = 'completed';
+    saveDB();
+    renderOrders();
+    showToast('已标记发货');
+  }
+
+  function confirmCancelOrder(id) {
+    if (!confirm('确认取消该订单？将把金额退回用户余额')) return;
+    const order = (db.orders || []).find(o => o.id === id);
+    if (order) {
+      // 退款给用户
+      const user = db.users.find(u => u.username === order.username);
+      if (user) user.balance = (user.balance || 0) + order.total;
+    }
+    // 直接删除订单，不留在列表里
+    db.orders = (db.orders || []).filter(o => o.id !== id);
+    saveDB();
+    renderOrders();
+    showToast('订单已取消，金额已退回');
+  }
+
+  function adminCancelOrder(id) {
+    if (!confirm('后台直接取消该订单？将把金额退回用户余额')) return;
+    const order = (db.orders || []).find(o => o.id === id);
+    if (order) {
+      const user = db.users.find(u => u.username === order.username);
+      if (user) user.balance = (user.balance || 0) + order.total;
+    }
+    // 直接删除订单
+    db.orders = (db.orders || []).filter(o => o.id !== id);
+    saveDB();
+    renderOrders();
+    showToast('订单已取消，金额已退回');
+  }
+
+  // ===== 提现 =====
+  function renderWithdrawals() {
+    const el = document.getElementById('withdrawal-list');
+    const list = db.withdrawals || [];
+    if (list.length === 0) {
+      el.innerHTML = '<div class="empty">暂无提现申请</div>';
+      updateStats();
+      return;
+    }
+    const sorted = [...list].reverse();
+    let html = `<table><thead><tr>
+      <th>用户</th><th>提现方式</th><th>收款信息</th><th>申请金额</th><th>手续费</th><th>实际到账</th><th>时间</th><th>操作</th>
+    </tr></thead><tbody>`;
+    sorted.forEach(w => {
+      const time = new Date(w.createdAt).toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+      const fee = w.amount * 0.02;
+      const qrcodeHtml = w.qrcode ? `<img src="${w.qrcode}" style="max-width:80px;border-radius:6px;cursor:pointer;" onclick="window.open('${w.qrcode}')">` : '无';
+      html += `<tr>
+        <td>${esc(w.username)}</td>
+        <td>${esc(w.type)}</td>
+        <td>${esc(w.info) || '—'}<br>${qrcodeHtml}</td>
+        <td>¥${w.amount.toFixed(2)}</td>
+        <td style="color:#f87171">¥${fee.toFixed(2)}</td>
+        <td style="color:#4ade80;font-weight:bold">¥${w.realAmount.toFixed(2)}</td>
+        <td style="font-size:12px;color:rgba(255,255,255,0.5)">${time}</td>
+        <td><button class="btn btn-primary btn-sm" onclick="completeWithdraw('${w.id}')">已打款</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+    updateStats();
+  }
+
+  function completeWithdraw(id) {
+    if (!confirm('确认已打款？确认后该提现申请将从列表删除')) return;
+    db.withdrawals = (db.withdrawals || []).filter(w => w.id !== id);
+    saveDB();
+    renderWithdrawals();
+    showToast('已标记打款完成');
+  }
+
+  // ===== 用户 =====
+  function renderUsers() {
+    const el = document.getElementById('user-list');
+    if (db.users.length === 0) {
+      el.innerHTML = '<div class="empty">暂无注册用户</div>';
+      return;
+    }
+    let html = `<table><thead><tr><th>账号</th><th>余额</th></tr></thead><tbody>`;
+    db.users.forEach(u => {
+      html += `<tr><td>${esc(u.username)}</td><td style="color:#fb923c">¥${(u.balance||0).toFixed(2)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 2000);
+  }
+  function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  // 点击遮罩关闭
+  document.querySelectorAll('.modal-mask').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+  });
+
+  renderCats();
+</script>
+
+</body>
+</html>

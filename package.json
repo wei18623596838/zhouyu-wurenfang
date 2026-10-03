@@ -1,0 +1,12 @@
+{
+  "name": "zhouyu-wurenfang",
+  "version": "1.0.0",
+  "description": "周瑜无人房卡密销售系统",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
